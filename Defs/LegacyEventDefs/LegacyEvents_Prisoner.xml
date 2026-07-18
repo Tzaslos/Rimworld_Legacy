@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <Legacy.Domain.LegacyEventDef>
+    <defName>Legacy_ThoughtImpact</defName>
+    <label>lasting thought impact</label>
+    <description>A meaningful positive or negative thought impact was recorded for a pawn.</description>
+    <kind>ThoughtImpact</kind>
+    <category>Thought</category>
+    <severity>Major</severity>
+    <reputationWeight>1.0</reputationWeight>
+    <biographyTags>
+      <li>thought</li>
+      <li>impact</li>
+    </biographyTags>
+  </Legacy.Domain.LegacyEventDef>
+
+  <Legacy.Domain.LegacyEventDef>
+    <defName>Legacy_PrisonerReleased</defName>
+    <label>released from captivity</label>
+    <description>A pawn was intentionally released from prisoner status.</description>
+    <kind>Released</kind>
+    <category>Captivity</category>
+    <severity>Major</severity>
+    <reputationWeight>1.0</reputationWeight>
+    <biographyTags>
+      <li>captivity</li>
+      <li>release</li>
+    </biographyTags>
+  </Legacy.Domain.LegacyEventDef>
+
+  <Legacy.Domain.LegacyEventDef>
+    <defName>Legacy_MagicWitnessed</defName>
+    <label>witnessed magic</label>
+    <description>A pawn witnessed another pawn using magic.</description>
+    <kind>MagicUsed</kind>
+    <category>Reputation</category>
+    <severity>Minor</severity>
+    <reputationWeight>0.4</reputationWeight>
+    <biographyTags>
+      <li>magic</li>
+      <li>witness</li>
+    </biographyTags>
+  </Legacy.Domain.LegacyEventDef>
+
+  <Legacy.Domain.LegacyEventDef>
+    <defName>Legacy_NecromancyWitnessed</defName>
+    <label>witnessed necromancy</label>
+    <description>A pawn witnessed another pawn raising or commanding the dead.</description>
+    <kind>Necromancy</kind>
+    <category>Reputation</category>
+    <severity>Major</severity>
+    <reputationWeight>1.2</reputationWeight>
+    <biographyTags>
+      <li>magic</li>
+      <li>necromancy</li>
+      <li>undead</li>
+    </biographyTags>
+  </Legacy.Domain.LegacyEventDef>
+</Defs>

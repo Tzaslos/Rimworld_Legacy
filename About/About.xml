@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ModMetaData>
+  <name>Legacy</name>
+  <author>Ruben</author>
+  <packageId>ruben.legacy</packageId>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <modDependencies>
+    <li>
+      <packageId>brrainz.harmony</packageId>
+      <displayName>Harmony</displayName>
+      <steamWorkshopUrl>steam://url/CommunityFilePage/2009463077</steamWorkshopUrl>
+    </li>
+  </modDependencies>
+  <loadAfter>
+    <li>torann.arimworldofmagic</li>
+  </loadAfter>
+  <description>
+Legacy is a RimWorld storytelling framework for life events with lasting consequences.
+
+It records defining moments in a pawn's story, including violence, captivity, slavery, rescue, surgery, relationships, colony events, and other meaningful impacts. These records persist beyond ordinary memories and can form long-term reputations between pawns, such as heroes and nemeses.
+
+Legacy does not replace RimWorld's mood, memory, opinion, or relationship systems. Instead, it watches important events, preserves them as history, and uses them to inform optional consequences such as gifts, raids, reputation shifts, and debug-visible pawn histories.
+
+Features:
+- Persistent pawn legacy records.
+- Relationship history screens for recorded pawn interactions.
+- Hero and nemesis states based on accumulated impact.
+- Optional consequence events for major legacy relationships.
+- Debug tools for reviewing records and assigning reputational titles.
+- Deduplication and pawn eligibility checks to avoid repeated records and dead-pawn events.
+
+Optional integrations:
+- Karma &amp; Reputation can inform Legacy relationship states when enabled.
+- Psychology, vanilla traits, Ideology, and compatible trait mods can shape how pawns interpret events. A forgiving pawn may soften harm, while violent, cannibalistic, pain-focused, or sadistic pawns may react in less conventional ways.
+- A RimWorld of Magic is detected automatically when loaded. Pawns can remember witnessed magic, blood magic, and necromancy, including reputational labels such as Blood mage and Necromancer. Witness reactions are scored through Legacy's normal trait, Psychology, Ideology, Karma, and relationship interpretation layers.
+
+Requires Harmony.
+  </description>
+</ModMetaData>
