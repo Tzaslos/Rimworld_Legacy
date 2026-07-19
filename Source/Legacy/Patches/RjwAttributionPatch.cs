@@ -31,6 +31,11 @@ namespace Legacy.Patches
 
         private static IEnumerable<MethodBase> TargetMethods()
         {
+            if (!LegacyModIntegrationService.IsRjwActive())
+            {
+                yield break;
+            }
+
             Type afterSexUtility = AccessTools.TypeByName("rjw.AfterSexUtility");
             if (afterSexUtility == null)
             {
@@ -62,6 +67,11 @@ namespace Legacy.Patches
 
         public static void Prefix(object[] __args)
         {
+            if (LegacyMod.Settings == null || !LegacyMod.Settings.useRjwIntegration)
+            {
+                return;
+            }
+
             if (__args == null || __args.Length < 2)
             {
                 return;

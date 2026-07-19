@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using Legacy.Core;
 using Legacy.Domain;
 using Legacy.Storage;
 using RimWorld;
@@ -13,6 +14,11 @@ namespace Legacy.Services
 
         public static void TryRecordAbilityUse(object abilityVerb)
         {
+            if (LegacyMod.Settings == null || !LegacyMod.Settings.useRimWorldOfMagicIntegration)
+            {
+                return;
+            }
+
             Pawn caster = TryGetCaster(abilityVerb);
             if (!LegacyPawnEligibilityService.CanCreateLegacyEvents(caster) || caster.Map == null)
             {

@@ -141,7 +141,11 @@ namespace Legacy.Storage
 
             LegacyThoughtImpactScanner.ScanVisiblePawnThoughts();
             LegacyRelationshipService.EvaluateRelationships(this);
-            LegacyConsequenceService.EvaluateConsequences(this);
+
+            if (LegacyMod.Settings != null && LegacyMod.Settings.debugMode && LegacyMod.Settings.debugUseHardTimerConsequences)
+            {
+                LegacyConsequenceService.EvaluateConsequences(this);
+            }
         }
 
         private void RebuildRuntimeState()

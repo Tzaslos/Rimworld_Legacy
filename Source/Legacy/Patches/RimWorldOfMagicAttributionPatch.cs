@@ -10,13 +10,12 @@ namespace Legacy.Patches
 {
     public static class RimWorldOfMagicAttributionPatch
     {
-        private const string RimWorldOfMagicPackageId = "torann.arimworldofmagic";
         private static bool patched;
         private static bool reportedMissing;
 
         public static void Apply(Harmony harmony)
         {
-            if (patched || harmony == null || !IsRimWorldOfMagicActive())
+            if (patched || harmony == null || !LegacyModIntegrationService.IsRimWorldOfMagicActive())
             {
                 return;
             }
@@ -91,61 +90,6 @@ namespace Legacy.Patches
             {
                 methods.Add(method);
             }
-        }
-
-        private static bool IsRimWorldOfMagicActive()
-        {
-            if (ModsConfig.IsActive(RimWorldOfMagicPackageId))
-            {
-                return true;
-            }
-
-            foreach (ModMetaData mod in ModsConfig.ActiveModsInLoadOrder)
-            {
-                if (mod == null)
-                {
-                    continue;
-                }
-
-                string packageId = mod.PackageId;
-                string workshopId = GetModMetadataString(mod, "WorkshopId", "PublishedFileId", "SteamWorkshopId");
-                if ((!string.IsNullOrEmpty(packageId) && packageId.ToLowerInvariant() == RimWorldOfMagicPackageId)
-                    || workshopId == "1201382956")
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static string GetModMetadataString(ModMetaData mod, params string[] names)
-        {
-            Type type = mod.GetType();
-            foreach (string name in names)
-            {
-                PropertyInfo property = type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (property != null && property.GetIndexParameters().Length == 0)
-                {
-                    object value = property.GetValue(mod, null);
-                    if (value != null)
-                    {
-                        return value.ToString();
-                    }
-                }
-
-                FieldInfo field = type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (field != null)
-                {
-                    object value = field.GetValue(mod);
-                    if (value != null)
-                    {
-                        return value.ToString();
-                    }
-                }
-            }
-
-            return null;
         }
 
         public static void Postfix(object __instance)

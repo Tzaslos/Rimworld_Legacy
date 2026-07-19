@@ -9,14 +9,23 @@ namespace Legacy.Patches
     [HarmonyPatch(typeof(Pawn), "GetGizmos")]
     public static class PawnGizmosPatch
     {
-        public static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> values, Pawn __instance)
+        [HarmonyPriority(Priority.Last)]
+        public static void Postfix(Pawn __instance, ref IEnumerable<Gizmo> __result)
         {
-            foreach (Gizmo gizmo in values)
+            __result = AppendLegacyGizmo(__result, __instance);
+        }
+
+        private static IEnumerable<Gizmo> AppendLegacyGizmo(IEnumerable<Gizmo> values, Pawn pawn)
+        {
+            if (values != null)
             {
-                yield return gizmo;
+                foreach (Gizmo gizmo in values)
+                {
+                    yield return gizmo;
+                }
             }
 
-            if (__instance == null || __instance.RaceProps == null || !__instance.RaceProps.Humanlike)
+            if (pawn == null || pawn.RaceProps == null || !pawn.RaceProps.Humanlike)
             {
                 yield break;
             }
@@ -28,7 +37,7 @@ namespace Legacy.Patches
                 icon = TexCommand.DesirePower,
                 action = delegate
                 {
-                    Find.WindowStack.Add(new Dialog_LegacyDebug(__instance));
+                    Find.WindowStack.Add(new Dialog_LegacyDebug(pawn));
                 }
             };
         }

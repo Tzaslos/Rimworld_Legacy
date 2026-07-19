@@ -26,7 +26,7 @@ namespace Legacy.Services
 
         public static bool IsKarmaModActive()
         {
-            return ModsConfig.IsActive(KarmaPackageId);
+            return LegacyModIntegrationService.IsKarmaActive();
         }
 
         public static bool TryClassifyPawn(int pawnId, out LegacyRelationshipKind kind, out float karmaScore)

@@ -25,7 +25,7 @@ namespace Legacy.Services
 
             foreach (LegacyRelationshipState state in component.RelationshipStates)
             {
-                if (state == null || state.kind == LegacyRelationshipKind.Neutral)
+                if (state == null)
                 {
                     continue;
                 }
@@ -35,33 +35,124 @@ namespace Legacy.Services
                     continue;
                 }
 
-                if (!LegacyPawnEligibilityService.IsKnownAlivePawn(state.subjectPawnId)
-                    || !LegacyPawnEligibilityService.IsKnownAlivePawn(state.otherPawnId))
+                if (!IsEligibleForConsequence(state, state != null ? state.kind : LegacyRelationshipKind.Neutral, Find.AnyPlayerHomeMap, useChance: true))
                 {
                     continue;
                 }
 
-                if (IsPawnOnPlayerMap(state.otherPawnId))
+                if (TryFireConsequence(state))
                 {
-                    continue;
+                    state.lastConsequenceTick = currentTick;
                 }
-
-                if (!PassesScaledChance(state))
-                {
-                    continue;
-                }
-
-                if (state.kind == LegacyRelationshipKind.Hero)
-                {
-                    SendHeroGift(state);
-                }
-                else if (state.kind == LegacyRelationshipKind.Nemesis)
-                {
-                    SendNemesisThreat(state);
-                }
-
-                state.lastConsequenceTick = currentTick;
             }
+        }
+
+        public static bool CanFireNow(LegacyRelationshipKind kind, Map map)
+        {
+            LegacyRelationshipState state;
+            return TryFindEligibleState(kind, map, out state);
+        }
+
+        public static bool TryFireStorytellerConsequence(LegacyRelationshipKind kind, Map map)
+        {
+            LegacyRelationshipState state;
+            if (!TryFindEligibleState(kind, map, out state))
+            {
+                return false;
+            }
+
+            bool fired = TryFireConsequence(state);
+            if (fired)
+            {
+                state.lastConsequenceTick = CurrentTick();
+            }
+
+            return fired;
+        }
+
+        private static bool TryFindEligibleState(LegacyRelationshipKind kind, Map map, out LegacyRelationshipState state)
+        {
+            state = null;
+            if (LegacyMod.Settings == null || !LegacyMod.Settings.enableConsequences)
+            {
+                return false;
+            }
+
+            LegacyWorldComponent component = Find.World != null ? Find.World.GetComponent<LegacyWorldComponent>() : null;
+            if (component == null || component.RelationshipStates == null)
+            {
+                return false;
+            }
+
+            List<LegacyRelationshipState> candidates = new List<LegacyRelationshipState>();
+            foreach (LegacyRelationshipState candidate in component.RelationshipStates)
+            {
+                if (IsEligibleForConsequence(candidate, kind, map, useChance: false))
+                {
+                    candidates.Add(candidate);
+                }
+            }
+
+            if (candidates.Count == 0)
+            {
+                return false;
+            }
+
+            state = candidates.RandomElement();
+            return true;
+        }
+
+        private static bool IsEligibleForConsequence(LegacyRelationshipState state, LegacyRelationshipKind kind, Map map, bool useChance)
+        {
+            if (state == null || kind == LegacyRelationshipKind.Neutral || state.kind != kind)
+            {
+                return false;
+            }
+
+            if (!LegacyPawnEligibilityService.IsKnownAlivePawn(state.subjectPawnId)
+                || !LegacyPawnEligibilityService.IsKnownAlivePawn(state.otherPawnId))
+            {
+                return false;
+            }
+
+            if (IsPawnOnPlayerMap(state.otherPawnId))
+            {
+                return false;
+            }
+
+            int interval = LegacyMod.Settings.consequenceIntervalTicks;
+            if (interval < 10000)
+            {
+                interval = 10000;
+            }
+
+            if (CurrentTick() - state.lastConsequenceTick < interval)
+            {
+                return false;
+            }
+
+            if (map == null && Find.AnyPlayerHomeMap == null)
+            {
+                return false;
+            }
+
+            return !useChance || PassesScaledChance(state);
+        }
+
+        private static bool TryFireConsequence(LegacyRelationshipState state)
+        {
+            if (state.kind == LegacyRelationshipKind.Hero)
+            {
+                SendHeroGift(state);
+                return true;
+            }
+
+            if (state.kind == LegacyRelationshipKind.Nemesis)
+            {
+                return SendNemesisThreat(state);
+            }
+
+            return false;
         }
 
         private static bool PassesScaledChance(LegacyRelationshipState state)
@@ -148,7 +239,7 @@ namespace Legacy.Services
             return gift;
         }
 
-        private static void SendNemesisThreat(LegacyRelationshipState state)
+        private static bool SendNemesisThreat(LegacyRelationshipState state)
         {
             Map map = Find.AnyPlayerHomeMap;
             if (map == null)
@@ -157,13 +248,13 @@ namespace Legacy.Services
                     "Legacy threat",
                     state.otherName + " has not forgotten " + state.subjectName + ".",
                     LetterDefOf.ThreatSmall);
-                return;
+                return true;
             }
 
             Pawn nemesis = LegacyPawnEligibilityService.TryResolveAlivePawn(state.otherPawnId);
             if (nemesis == null || nemesis.Spawned)
             {
-                return;
+                return false;
             }
 
             IncidentParms parms = StorytellerUtility.DefaultParmsNow(IncidentCategoryDefOf.ThreatBig, map);
@@ -188,6 +279,13 @@ namespace Legacy.Services
                     state.otherName + " has not forgotten " + state.subjectName + ". Their enmity stirs beyond the colony.",
                     LetterDefOf.ThreatSmall);
             }
+
+            return fired;
+        }
+
+        private static int CurrentTick()
+        {
+            return Find.TickManager != null ? Find.TickManager.TicksGame : 0;
         }
 
         private static float ScaledRaidPoints(LegacyRelationshipState state, float defaultPoints)

@@ -46,6 +46,8 @@ namespace Legacy.UI.Debug
 
         public override void DoWindowContents(Rect inRect)
         {
+            EnsureSelectedPawnIsSelectable();
+
             Text.Font = GameFont.Medium;
             Widgets.Label(new Rect(inRect.x, inRect.y, inRect.width, 34f), "Legacy Records");
             Text.Font = GameFont.Small;
@@ -66,11 +68,34 @@ namespace Legacy.UI.Debug
             DrawRelations(relationRect);
         }
 
+        private void EnsureSelectedPawnIsSelectable()
+        {
+            if (selectedPawnId >= 0)
+            {
+                Pawn selectedPawn = LegacyPawnEligibilityService.TryResolveKnownPawn(selectedPawnId);
+                if (IsSelectableColonyPawn(selectedPawn))
+                {
+                    return;
+                }
+            }
+
+            List<Pawn> pawns = GetSelectableColonyPawns();
+            if (pawns.Count > 0)
+            {
+                SelectPawn(pawns[0]);
+                return;
+            }
+
+            selectedPawnId = -1;
+            selectedPawnName = "No colony pawn";
+            titleBuffer = string.Empty;
+        }
+
         private void DrawPawnSelector(Rect rect)
         {
             if (Widgets.ButtonText(rect, selectedPawnName))
             {
-                OpenPawnSelector();
+                SelectNextColonyPawn();
             }
         }
 
@@ -161,17 +186,24 @@ namespace Legacy.UI.Debug
                 return;
             }
 
-            float rowHeight = 54f;
+            float headerHeight = 24f;
+            float rowHeight = 30f;
+            float nameWidth = outRect.width * 0.34f;
+            float factionWidth = outRect.width * 0.26f;
+            float relationWidth = outRect.width * 0.16f;
+            float statusWidth = outRect.width - nameWidth - factionWidth - relationWidth - 26f;
+
+            DrawRelationHeader(new Rect(outRect.x, outRect.y, outRect.width - 16f, headerHeight), nameWidth, factionWidth, relationWidth, statusWidth);
+
+            Rect scrollOutRect = new Rect(outRect.x, outRect.y + headerHeight, outRect.width, outRect.height - headerHeight);
             Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, summaries.Count * rowHeight);
-            Widgets.BeginScrollView(outRect, ref relationScroll, viewRect);
+            Widgets.BeginScrollView(scrollOutRect, ref relationScroll, viewRect);
 
             float y = 0f;
             foreach (RelationSummary summary in summaries)
             {
-                Rect row = new Rect(0f, y, viewRect.width, rowHeight - 6f);
+                Rect row = new Rect(0f, y, viewRect.width, rowHeight - 4f);
                 Widgets.DrawBoxSolid(row, new Color(0.16f, 0.16f, 0.16f, 0.35f));
-                string score = ShowDebugDetails() ? "  " + summary.Score.ToString("+0;-0;0") : string.Empty;
-                string kind = summary.Kind != LegacyRelationshipKind.Neutral ? "  [" + summary.Kind + "]" : string.Empty;
                 if (Mouse.IsOver(row))
                 {
                     Widgets.DrawHighlight(row);
@@ -182,24 +214,70 @@ namespace Legacy.UI.Debug
                     Find.WindowStack.Add(new Dialog_LegacyHistory(selectedPawnId, selectedPawnName, summary.OtherPawnId, summary.Name));
                 }
 
-                Widgets.Label(new Rect(row.x + 8f, row.y + 6f, row.width - 16f, 22f), summary.Name + score + kind);
-                Widgets.Label(new Rect(row.x + 8f, row.y + 26f, row.width - 16f, 18f), summary.Count + " records - click to view history");
+                DrawRelationRow(row, summary, nameWidth, factionWidth, relationWidth, statusWidth);
                 y += rowHeight;
             }
 
             Widgets.EndScrollView();
         }
 
+        private static void DrawRelationHeader(Rect rect, float nameWidth, float factionWidth, float relationWidth, float statusWidth)
+        {
+            Color previousColor = GUI.color;
+            GUI.color = new Color(0.72f, 0.72f, 0.72f);
+            float x = rect.x + 8f;
+            Widgets.Label(new Rect(x, rect.y + 2f, nameWidth - 8f, rect.height), "Pawn");
+            x += nameWidth;
+            Widgets.Label(new Rect(x, rect.y + 2f, factionWidth - 8f, rect.height), "Faction");
+            x += factionWidth;
+            Widgets.Label(new Rect(x, rect.y + 2f, relationWidth - 8f, rect.height), "Relation");
+            x += relationWidth;
+            Widgets.Label(new Rect(x, rect.y + 2f, statusWidth - 8f, rect.height), "Status");
+            GUI.color = previousColor;
+        }
+
+        private static void DrawRelationRow(Rect row, RelationSummary summary, float nameWidth, float factionWidth, float relationWidth, float statusWidth)
+        {
+            float x = row.x + 8f;
+            Widgets.Label(new Rect(x, row.y + 5f, nameWidth - 8f, 22f), summary.Name);
+            x += nameWidth;
+            Widgets.Label(new Rect(x, row.y + 5f, factionWidth - 8f, 22f), summary.FactionText);
+            x += factionWidth;
+
+            Color previousColor = GUI.color;
+            GUI.color = RelationColor(summary.Kind);
+            Widgets.Label(new Rect(x, row.y + 5f, relationWidth - 8f, 22f), summary.Kind.ToString());
+            GUI.color = previousColor;
+
+            x += relationWidth;
+            Widgets.Label(new Rect(x, row.y + 5f, statusWidth - 8f, 22f), summary.StatusText);
+        }
+
+        private static Color RelationColor(LegacyRelationshipKind kind)
+        {
+            if (kind == LegacyRelationshipKind.Hero)
+            {
+                return Color.green;
+            }
+
+            if (kind == LegacyRelationshipKind.Nemesis)
+            {
+                return Color.red;
+            }
+
+            return Color.yellow;
+        }
+
         private static void DrawRecordList(Rect outRect, List<LegacyRecord> records, ref Vector2 scroll)
         {
-            float rowHeight = 72f;
+            float rowHeight = 44f;
             Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, records.Count * rowHeight);
             Widgets.BeginScrollView(outRect, ref scroll, viewRect);
 
             float y = 0f;
             foreach (LegacyRecord record in records)
             {
-                DrawRecord(new Rect(0f, y, viewRect.width, 64f), record);
+                DrawRecord(new Rect(0f, y, viewRect.width, 36f), record);
                 y += rowHeight;
             }
 
@@ -212,62 +290,81 @@ namespace Legacy.UI.Debug
             Widgets.DrawBox(rect);
         }
 
-        private void OpenPawnSelector()
+        private void SelectNextColonyPawn()
         {
-            List<FloatMenuOption> options = new List<FloatMenuOption>();
-            foreach (LegacySubjectRef pawnRef in GetKnownPawns())
+            List<Pawn> pawns = GetSelectableColonyPawns();
+            if (pawns.Count == 0)
             {
-                LegacySubjectRef localPawnRef = pawnRef;
-                options.Add(new FloatMenuOption(localPawnRef.name, delegate
-                {
-                    selectedPawnId = localPawnRef.thingIdNumber;
-                    selectedPawnName = localPawnRef.name;
-                    LegacyWorldComponent component = GetComponent();
-                    titleBuffer = component != null ? component.GetPawnTitle(selectedPawnId) : string.Empty;
-                    relationScroll = Vector2.zero;
-                }));
+                Messages.Message("No colony pawns available for Legacy.", MessageTypeDefOf.RejectInput, false);
+                return;
             }
 
-            if (options.Count == 0)
+            int nextIndex = 0;
+            for (int i = 0; i < pawns.Count; i++)
             {
-                options.Add(new FloatMenuOption("No Legacy pawns recorded", null));
-            }
-
-            Find.WindowStack.Add(new FloatMenu(options));
-        }
-
-        private static List<LegacySubjectRef> GetKnownPawns()
-        {
-            Dictionary<int, LegacySubjectRef> pawns = new Dictionary<int, LegacySubjectRef>();
-            foreach (LegacyRecord record in GetAllRecords())
-            {
-                AddPawnRef(pawns, record.subject);
-
-                if (record.participants == null)
+                if (pawns[i] != null && pawns[i].thingIDNumber == selectedPawnId)
                 {
-                    continue;
-                }
-
-                foreach (LegacyParticipant participant in record.participants)
-                {
-                    if (participant != null && participant.role == LegacyParticipantRole.OtherPawn)
-                    {
-                        AddPawnRef(pawns, participant.pawn);
-                    }
+                    nextIndex = (i + 1) % pawns.Count;
+                    break;
                 }
             }
 
-            return pawns.Values.OrderBy(pawnRef => pawnRef.name).ToList();
+            SelectPawn(pawns[nextIndex]);
         }
 
-        private static void AddPawnRef(Dictionary<int, LegacySubjectRef> pawns, LegacySubjectRef pawnRef)
+        private void SelectPawn(Pawn pawn)
         {
-            if (pawnRef == null || pawnRef.thingIdNumber < 0 || pawns.ContainsKey(pawnRef.thingIdNumber))
+            if (pawn == null)
             {
                 return;
             }
 
-            pawns.Add(pawnRef.thingIdNumber, pawnRef);
+            selectedPawnId = pawn.thingIDNumber;
+            selectedPawnName = pawn.LabelShort;
+            LegacyWorldComponent component = GetComponent();
+            titleBuffer = component != null ? component.GetPawnTitle(selectedPawnId) : string.Empty;
+            relationScroll = Vector2.zero;
+        }
+
+        private static List<Pawn> GetSelectableColonyPawns()
+        {
+            List<Pawn> pawns = new List<Pawn>();
+            if (Find.Maps == null)
+            {
+                return pawns;
+            }
+
+            foreach (Map map in Find.Maps)
+            {
+                if (map == null || !map.IsPlayerHome || map.mapPawns == null)
+                {
+                    continue;
+                }
+
+                foreach (Pawn pawn in map.mapPawns.AllPawnsSpawned)
+                {
+                    if (IsSelectableColonyPawn(pawn))
+                    {
+                        pawns.Add(pawn);
+                    }
+                }
+            }
+
+            return pawns
+                .OrderBy(pawn => pawn.LabelShort)
+                .ToList();
+        }
+
+        private static bool IsSelectableColonyPawn(Pawn pawn)
+        {
+            if (!LegacyPawnEligibilityService.CanCreateLegacyEvents(pawn) || pawn.Map == null || !pawn.Map.IsPlayerHome)
+            {
+                return false;
+            }
+
+            return pawn.IsColonist
+                || pawn.IsSlave
+                || (pawn.guest != null && pawn.guest.IsPrisoner);
         }
 
         private List<LegacyRecord> GetRecordsForSelectedPawn()
@@ -355,22 +452,23 @@ namespace Legacy.UI.Debug
 
             string subjectName = record.subject != null ? record.subject.name : "Unknown pawn";
             string otherPawnName = GetOtherPawnName(record);
-            string label = !string.IsNullOrEmpty(record.label) ? record.label : "Legacy impact";
             string headline = BuildHeadline(record, subjectName, otherPawnName);
-            string impact = ShowDebugDetails() && record.moodOffset != 0f ? " (" + record.moodOffset.ToString("+0;-0") + ")" : string.Empty;
-            string description = CleanDescription(record.description, otherPawnName);
+            string impact = record.moodOffset != 0f ? " (" + record.moodOffset.ToString("+0;-0") + ")" : string.Empty;
+            float impactWidth = !string.IsNullOrEmpty(impact) ? Text.CalcSize(impact).x + 4f : 0f;
 
-            Widgets.Label(new Rect(inner.x, inner.y, inner.width, 22f), headline + impact);
-            Widgets.Label(new Rect(inner.x, inner.y + 22f, inner.width, 22f), !string.IsNullOrEmpty(description) ? description : label);
-            if (ShowDebugDetails())
+            Widgets.Label(new Rect(inner.x, inner.y + 2f, inner.width - impactWidth, 22f), headline);
+            if (!string.IsNullOrEmpty(impact))
             {
-                Widgets.Label(new Rect(inner.x, inner.y + 44f, inner.width, 20f), "Tick " + record.tick);
+                Color previousColor = GUI.color;
+                GUI.color = record.moodOffset > 0f ? Color.green : Color.red;
+                Widgets.Label(new Rect(inner.x + inner.width - impactWidth, inner.y + 2f, impactWidth, 22f), impact);
+                GUI.color = previousColor;
             }
         }
 
         internal static bool ShowDebugDetails()
         {
-            return LegacyMod.Settings != null && LegacyMod.Settings.showDebugDetails;
+            return LegacyMod.Settings != null && LegacyMod.Settings.debugMode && LegacyMod.Settings.showDebugDetails;
         }
 
         private static string BuildHeadline(LegacyRecord record, string subjectName, string otherPawnName)
@@ -401,6 +499,11 @@ namespace Legacy.UI.Debug
                 return "shot";
             }
 
+            if (source.Contains("rjw") || source.Contains("rape") || source.Contains("non-consensual") || source.Contains("nonconsensual") || source.Contains("forced") || source.Contains("sexual"))
+            {
+                return "sexually assaulted";
+            }
+
             if (source.Contains("stab") || source.Contains("cut") || source.Contains("melee") || source.Contains("combatdamage"))
             {
                 return "attacked";
@@ -408,7 +511,12 @@ namespace Legacy.UI.Debug
 
             if (source.Contains("captur") || source.Contains("imprison"))
             {
-                return "captured";
+                return "imprisoned";
+            }
+
+            if (source.Contains("slave") || source.Contains("enslav"))
+            {
+                return "enslaved";
             }
 
             if (source.Contains("rescu"))
@@ -452,19 +560,6 @@ namespace Legacy.UI.Debug
             return result;
         }
 
-        private static string CleanDescription(string description, string otherPawnName)
-        {
-            if (string.IsNullOrEmpty(description))
-            {
-                return string.Empty;
-            }
-
-            string result = description;
-            result = result.Replace("The colony harvested", otherPawnName + " harvested");
-            result = result.Replace("the colony harvested", otherPawnName + " harvested");
-            return result;
-        }
-
         private static string GetOtherPawnName(LegacyRecord record)
         {
             LegacySubjectRef otherPawn = GetOtherPawn(record);
@@ -504,7 +599,13 @@ namespace Legacy.UI.Debug
                 RelationSummary summary;
                 if (!summaries.TryGetValue(other.thingIdNumber, out summary))
                 {
-                    summary = new RelationSummary { Name = other.name, OtherPawnId = other.thingIdNumber };
+                    summary = new RelationSummary
+                    {
+                        Name = other.name,
+                        OtherPawnId = other.thingIdNumber,
+                        FactionText = BuildFactionText(other),
+                        StatusText = BuildStatusText(other.thingIdNumber, other)
+                    };
                     summaries[other.thingIdNumber] = summary;
                 }
 
@@ -523,7 +624,100 @@ namespace Legacy.UI.Debug
                 }
             }
 
-            return summaries.Values.OrderBy(summary => summary.Score).ToList();
+            return summaries.Values
+                .OrderBy(summary => summary.Kind == LegacyRelationshipKind.Nemesis ? 0 : summary.Kind == LegacyRelationshipKind.Hero ? 1 : 2)
+                .ThenBy(summary => summary.Name)
+                .ToList();
+        }
+
+        private static string BuildFactionText(LegacySubjectRef pawnRef)
+        {
+            Pawn pawn = pawnRef != null ? LegacyPawnEligibilityService.TryResolveKnownPawn(pawnRef.thingIdNumber) : null;
+            Faction faction = pawn != null ? pawn.Faction : null;
+            string factionName = faction != null ? faction.Name : pawnRef != null ? pawnRef.factionName : null;
+            if (string.IsNullOrEmpty(factionName))
+            {
+                factionName = "Independent";
+            }
+
+            return factionName;
+        }
+
+        private static string BuildStatusText(int pawnId, LegacySubjectRef pawnRef)
+        {
+            Pawn pawn = LegacyPawnEligibilityService.TryResolveKnownPawn(pawnId);
+            if (pawn == null)
+            {
+                if (pawnRef != null && pawnRef.wasSlave)
+                {
+                    return "formerly enslaved";
+                }
+
+                if (pawnRef != null && pawnRef.wasPrisoner)
+                {
+                    return "formerly imprisoned";
+                }
+
+                return "whereabouts unknown";
+            }
+
+            if (pawn.Dead)
+            {
+                return "dead";
+            }
+
+            string captivity = CurrentCaptivityText(pawn);
+            if (!string.IsNullOrEmpty(captivity))
+            {
+                return captivity;
+            }
+
+            if (pawn.Spawned)
+            {
+                if (pawn.Map != null && pawn.Map.IsPlayerHome)
+                {
+                    if (pawn.HostileTo(Faction.OfPlayer))
+                    {
+                        return "raiding on player map";
+                    }
+
+                    return "roaming on player map";
+                }
+
+                if (pawn.HostileTo(Faction.OfPlayer))
+                {
+                    return "hostile on nearby map";
+                }
+
+                return "active on nearby map";
+            }
+
+            if (pawn.HostileTo(Faction.OfPlayer))
+            {
+                return "hostile, roaming the world";
+            }
+
+            return "roaming the world";
+        }
+
+        private static string CurrentCaptivityText(Pawn pawn)
+        {
+            if (pawn == null)
+            {
+                return null;
+            }
+
+            if (pawn.guest != null && pawn.guest.IsPrisoner)
+            {
+                return "imprisoned";
+            }
+
+            if (pawn.IsSlave)
+            {
+                return "enslaved";
+            }
+
+            return null;
         }
 
         private LegacySubjectRef GetRelationCounterpart(LegacyRecord record)
@@ -551,6 +745,8 @@ namespace Legacy.UI.Debug
             public float Score;
             public int Count;
             public LegacyRelationshipKind Kind;
+            public string FactionText;
+            public string StatusText;
         }
     }
 
@@ -597,14 +793,14 @@ namespace Legacy.UI.Debug
 
         private void DrawRecordList(Rect outRect, List<LegacyRecord> records)
         {
-            float rowHeight = 72f;
+            float rowHeight = 44f;
             Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, records.Count * rowHeight);
             Widgets.BeginScrollView(outRect, ref scroll, viewRect);
 
             float y = 0f;
             foreach (LegacyRecord record in records)
             {
-                Dialog_LegacyDebug.DrawRecord(new Rect(0f, y, viewRect.width, 64f), record);
+                Dialog_LegacyDebug.DrawRecord(new Rect(0f, y, viewRect.width, 36f), record);
                 y += rowHeight;
             }
 

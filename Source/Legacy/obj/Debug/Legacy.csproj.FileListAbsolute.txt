@@ -1,0 +1,6 @@
+C:\Users\ruben\OneDrive\Desktop\Projects\Rimworld\Legacy\Assemblies\Legacy.dll
+C:\Users\ruben\OneDrive\Desktop\Projects\Rimworld\Legacy\Assemblies\Legacy.pdb
+C:\Users\ruben\OneDrive\Desktop\Projects\Rimworld\Legacy\Source\Legacy\obj\Debug\Legacy.csproj.AssemblyReference.cache
+C:\Users\ruben\OneDrive\Desktop\Projects\Rimworld\Legacy\Source\Legacy\obj\Debug\Legacy.csproj.CoreCompileInputs.cache
+C:\Users\ruben\OneDrive\Desktop\Projects\Rimworld\Legacy\Source\Legacy\obj\Debug\Legacy.dll
+C:\Users\ruben\OneDrive\Desktop\Projects\Rimworld\Legacy\Source\Legacy\obj\Debug\Legacy.pdb

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs>
+  <IncidentDef>
+    <defName>Legacy_HeroGift</defName>
+    <label>legacy hero gift</label>
+    <category>Misc</category>
+    <targetTags>
+      <li>Map_PlayerHome</li>
+    </targetTags>
+    <baseChance>0.35</baseChance>
+    <workerClass>Legacy.Services.IncidentWorker_LegacyHeroGift</workerClass>
+    <minRefireDays>2</minRefireDays>
+    <canOccurOnAllPlanetLayers>true</canOccurOnAllPlanetLayers>
+  </IncidentDef>
+
+  <IncidentDef>
+    <defName>Legacy_NemesisThreat</defName>
+    <label>legacy nemesis threat</label>
+    <category>ThreatBig</category>
+    <targetTags>
+      <li>Map_PlayerHome</li>
+    </targetTags>
+    <baseChance>0.18</baseChance>
+    <workerClass>Legacy.Services.IncidentWorker_LegacyNemesisThreat</workerClass>
+    <minRefireDays>5</minRefireDays>
+    <canOccurOnAllPlanetLayers>true</canOccurOnAllPlanetLayers>
+  </IncidentDef>
+</Defs>
